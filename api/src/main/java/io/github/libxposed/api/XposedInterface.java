@@ -240,26 +240,57 @@ public interface XposedInterface {
         Object proceed(@NonNull Object[] args) throws Throwable;
 
         /**
-         * Proceeds to the next interceptor in the chain with the same arguments and given {@code this} pointer.
-         * Static method interceptors should not call this.
+         * Proceeds to the next interceptor in this chain with the same arguments and the given
+         * {@code this} object. Static method interceptors should not call this method.
          *
-         * @param thisObject The {@code this} pointer for the call
-         * @return The result returned from next interceptor or the original executable if current
-         * interceptor is the last one in the chain.
+         * <p>This changes only the receiver used by the rest of the current chain. It does not change
+         * the executable returned by {@link #getExecutable()}, select a different override, or switch
+         * to another executable's hook chain. When this chain reaches its end, the framework invokes
+         * the original implementation of {@link #getExecutable()} on {@code thisObject}.</p>
+         *
+         * <p>For example, if {@link #getExecutable()} is {@code Parent.foo}, calling this method with
+         * a {@code Child} object still invokes the original {@code Parent.foo} on that object. It does
+         * not dispatch to {@code Child.foo} or run hooks registered for {@code Child.foo}. Use an
+         * {@link Invoker} to start a new invocation when virtual dispatch is desired.</p>
+         *
+         * <p>{@code thisObject} must be an instance of the declaring class of
+         * {@link #getExecutable()}.</p>
+         *
+         * @param thisObject The {@code this} object for the call
+         * @return The result returned from the next interceptor, or from the original executable if
+         * the current interceptor is the last one in the chain.
          * <p>For void methods and constructors, always returns {@code null}.</p>
+         * @throws IllegalArgumentException if {@code thisObject} is not compatible with the declaring
+         *                                  class of {@link #getExecutable()}
          * @throws Throwable if any interceptor or the original executable throws an exception
          */
         Object proceedWith(@NonNull Object thisObject) throws Throwable;
 
         /**
-         * Proceeds to the next interceptor in the chain with the given arguments and {@code this} pointer.
-         * Static method interceptors should not call this.
+         * Proceeds to the next interceptor in this chain with the given arguments and {@code this}
+         * object. Static method interceptors should not call this method.
          *
-         * @param thisObject The {@code this} pointer for the call
+         * <p>This changes the receiver and arguments used by the rest of the current chain, but not
+         * which executable the chain belongs to. It does not select a different override or switch to
+         * another executable's hook chain. When this chain reaches its end, the framework invokes the
+         * original implementation of {@link #getExecutable()} on {@code thisObject}, using
+         * {@code args}.</p>
+         *
+         * <p>For example, if {@link #getExecutable()} is {@code Parent.foo}, calling this method with
+         * a {@code Child} object still invokes the original {@code Parent.foo} on that object. It does
+         * not dispatch to {@code Child.foo} or run hooks registered for {@code Child.foo}. Use an
+         * {@link Invoker} to start a new invocation when virtual dispatch is desired.</p>
+         *
+         * <p>{@code thisObject} must be an instance of the declaring class of
+         * {@link #getExecutable()}.</p>
+         *
+         * @param thisObject The {@code this} object for the call
          * @param args       The arguments used for the call
-         * @return The result returned from next interceptor or the original executable if current
-         * interceptor is the last one in the chain.
+         * @return The result returned from the next interceptor, or from the original executable if
+         * the current interceptor is the last one in the chain.
          * <p>For void methods and constructors, always returns {@code null}.</p>
+         * @throws IllegalArgumentException if {@code thisObject} is not compatible with the declaring
+         *                                  class of {@link #getExecutable()}
          * @throws Throwable if any interceptor or the original executable throws an exception
          */
         Object proceedWith(@NonNull Object thisObject, @NonNull Object[] args) throws Throwable;
